@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像ルーレット</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .image-area { width: 300px; height: 300px; margin: 20px auto; border: 4px solid #333; display: flex; align-items: center; justify-content: center; background: #fafafa; border-radius: 8px; overflow: hidden; position: relative; }
+        img { width: 100%; height: 100%; object-fit: cover; }
+        .placeholder { color: #888; font-size: 18px; font-weight: bold; }
+        button { font-size: 20px; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 200px; transition: 0.2s; margin-bottom: 20px; }
+        .start-btn { background: #28a745; color: white; }
+        .start-btn:hover { background: #218838; }
+        .stop-btn { background: #dc3545; color: white; }
+        .stop-btn:hover { background: #c82333; }
+        /* 説明文エリアのスタイル */
+        .description-area { min-height: 60px; padding: 15px; background: #f8f9fa; border-radius: 5px; border-left: 5px solid #007bff; text-align: left; font-size: 16px; line-height: 1.5; color: #333; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>画像ルーレット</h2>
+    <div class="image-area" id="imageArea">
+        <span class="placeholder">スタートを押してね！</span>
+    </div>
+    <button id="actionBtn" class="start-btn" onclick="toggleRoulette()">スタート！</button>
+    
+    <!-- 画像の下部に説明文を表示するエリアを追加 -->
+    <div class="description-area" id="descriptionArea">
+        ここに画像の説明が表示されます。
+    </div>
+</div>
+
+<script>
+    // 1. 15枚の画像（1.png 〜 15.png）と、それぞれの説明文を設定
+    const items = [
+        { file: "1.png", text: "うしろやぐら（うしろ櫓）とは、いわゆる立ちバック（後向女性俯伏位）のコト。女性が両手を前につた状態で、男性は立ったまま挿入します。アウトドア時のｈでも代表的な体位。この男性の征服欲を刺激して、女性のm的な興奮を誘うこの体位は、存分に２人でイマジネーションを働かせるのが気持ちよくなれるコツ。" },
+        { file: "2.png", text: "つり橋は腰高位とも呼ばれ、正常位の状態から、女性の胴を空に浮かせて腰を支えて持ち上げます。男性が膝立ちになり、その男性の姿が、つり橋のようであることからネーミングされた体位です。男性の腕力が必要で、女性も腕だけじゃなく、腹筋と腰の力で支えることが必要です。この体位は奥が刺激されるので、女性にも人気です。" },
+        { file: "3.png", text: "寄り添いは、挿入をしない体位。２人で横になり、男性が女性に寄り添いあってスキンシップをとりあうこの体位。挿入する体位というよりも愛撫の姿勢である『寄り添い』は、前戯や後戯に使ってみてください。挿入しないでの快感を追求することで、『寄り添い』が、未知の快楽の扉を開いてくれるきっかけになるかもしれません。" },
+        { file: "4.png", text: "背面騎乗位でもあり、後背位の女性上位である、撞木ぞり（しゅもくぞり）。難易度の高い体位になります。仰向けになった男性の上に、女性が背中を向けてまたがり挿入します。そのまま足を大きく開いて、鏡を向かいにhをすれば、撞木ぞりで繋がりあっている部分がバッチリと見えて興奮度はマックスに！撞木ぞりで、一緒に激しく動いて達しましょう。" },
+        { file: "5.png", text: "『獅子舞（ししまい）』とは、対面座位の一種です。男女が向かい合って座り、二人とも後ろに手をついて身体を支えながら、女性は男性の肩に足を置きます。柔軟度が必要な苦しい姿勢になった女性を支えるのは、男性の腕力のほか、勃起力も大きな要素。しかし、この『獅子舞』はうまくいけば、膣がギュッと締まるので、男性にとっては嬉しい体位です。" },
+        { file: "6.png", text: "バレリーナ並みに広げられた女性の足を前にして、男性は横向けに「一」の字になりせっせと責める『菊一文字（きくいちもんじ）』。交叉男性側臥女性仰伏臥位とも言われています。こぼれ松葉から変化したかなり激しい体位です。女性が羞恥心を感じ、さらに男性の腰の動きに合わせて、腰をくねらすことで、今までにない快感を感じれます。" },
+        { file: "7.png", text: "『こたつがかり（炬燵がかり）』は、座位の一種で、男性が女性に挿入しながらこたつに入ります。内側からも外側からもポカポカになる、季節感たっぷりの座位の後背位。女性が座った男性の上に股がって、こたつの天板についた手を軸に腰を動かします。みかんを前に２人羽織期分で挑戦してみましょう！" },
+        { file: "8.png", text: "『テコがかり（梃子がかり）』は、男性上位の69（シックスナイン）から女性のつま先方向に移動して挿入する、難易度の高い体位。膣の角度とペニスの角度が反対で挿入しにくく、さらに挿入の深度が浅いためかなりアクロバティックな体位になります。この体位は、いつもの挿入とは反対になっているので、普段とは違う挿入感と気持ちよさを味わえます。" },
+        { file: "9.png", text: "『岩清水（いわしみず）』とは、いわゆる顔面騎乗位（顔面騎乗でのクンニ）です。48手の中でも挿入をしない体位です。流れ出る清水を、舌でどう舐めとってもらえるかが気持ち良さの分かれ目！顔にまたがるなど普段ではしない行為で、新鮮な興奮も高まるので、マンネリで悩んでいるカップルにおすすめします。" },
+        { file: "10.png", text: "時雨茶臼は、女性上位、騎乗位と言われる体位です。『時雨茶臼 （しぐれちゃうす）』は、男性が下から突き上げてもよし、女性が上下左右前後に動かしてもよし、のスタイルですが、やはり女性の動きが、時雨になるか台風になるかを分けることでしょう。男性を喜ばせるためにも、腰を上下にするピストン運動をぜひ試してみてください。" },
+        { file: "11.png", text: "女性の両手、両腿を縛るのが緊縛プレイが『理非知らず （りひしらず）』。主導権はすべて男性にあり、2人の間には愛と信頼が必須です。もちろん縛るので、無理強いは禁物。より深く性を探訪したいカップルが新たな世界に挑むときにチョイスして。男性は征服欲を、女性は隷属感を味わえます。" },
+        { file: "12.png", text: "『茶臼のばし（ちゃうすのばし）』は、女性上位で女性が男性の上半身に抱きつくようになり、女性の脚をやや伸ばし気味にして、男性の脚の間に入ります。これだと動きづらいのが難点ですが、男性には締め付け感を与えられ、テクがあまりない女性、上になるのが恥ずかしい女性にも人気です。そして何よりもキスをしながら全身の密着感を楽しめるのが最大のポイント。" },
+        { file: "13.png", text: "『こたつ隠れ（こたつがくれ）』とは、こたつを囲んで向かい合わせに座ったまま、天板の下で繋がりあうという悪戯めいた体位。見つめあって行えば恥ずかしさもあってドキドキ気分が味わえます。彼の大切な部分を足で愛撫して色っぽさを積極的に演出すれば官能映画の主役気分！？ただし夢中になりすぎて、ヤケドしないようご注意を！" },
+        { file: "14.png", text: "『乱れ牡丹（みだれぼたん）』は、座位の一種です。座った男性の上に、脚を大きく広げた女性が後ろ向きで座る体位。どうしても挿入が浅くなりますが、鏡の前で繋がれば、一気に興奮状態に！後ろから女性の首筋を愛撫し、甘い言葉を囁いて。ちなみに牡丹は女性の大切な部分の隠語です。乱れるのは彼女？それとも牡丹？" },
+        { file: "15.png", text: "15.png", text: "『帆かけ茶臼 （ほかけちゃうす）』は、騎乗位や対面座位のアレンジバージョン。男性は女性の両足を両腕で支えながら挿入を。女性はできるだけ脚を大きく開いて、彼に協力してあげましょう。カラダの固い人は要工夫かも…。お互いに繋がりあっている姿をじっくり見ながら腰を動かせば、恥ずかしさも興奮度も一気にマックス！" }
+    ];
+
+    let timerId = null;
+    let isRunning = false;
+    let currentIndex = 0;
+
+    const imageArea = document.getElementById('imageArea');
+    const actionBtn = document.getElementById('actionBtn');
+    const descriptionArea = document.getElementById('descriptionArea');
+
+    function toggleRoulette() {
+        if (!isRunning) {
+            // スタート処理
+            isRunning = true;
+            actionBtn.innerText = "ストップ！";
+            actionBtn.className = "stop-btn";
+            descriptionArea.innerText = "ルーレット中..."; // 回転中はテキストを変更
+            
+            timerId = setInterval(() => {
+                currentIndex = Math.floor(Math.random() * items.length);
+                imageArea.innerHTML = `<img src="${items[currentIndex].file}" alt="ルーレット中">`;
+            }, 50); 
+        } else {
+            // ストップ処理
+            clearInterval(timerId);
+            isRunning = false;
+            actionBtn.innerText = "スタート！";
+            actionBtn.className = "start-btn";
+            
+            // ストップした画像のデータから、説明文を画面に表示
+            descriptionArea.innerText = items[currentIndex].text;
+        }
+    }
+</script>
+
+</body>
+</html>
+
