@@ -5,15 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ルーレット</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
-.container { 
-            max-width: 600px; 
-            width: 90%;          /* 画面が狭いときは画面幅の90%に縮むようにする */
+	body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            background: #ffffff; /* 全体の背景も白にする */
+            margin: 0;           /* ブラウザ特有の余白をゼロにする */
+            padding: 0; 
+        }
+        .container { 
+            width: 100vw;        /* 画面の横幅いっぱいに広げる */
+            min-height: 100vh;   /* 画面の縦幅いっぱいに広げる（コンテンツが多ければ下に伸びる） */
             margin: 0 auto; 
             background: white; 
-            padding: 30px 20px;  /* スマホ用に左右の余白を少し調整 */
-            border-radius: 10px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+            padding: 30px 20px;  /* 上下左右の余白 */
             box-sizing: border-box; /* パディングを含めたサイズ計算にする */
         }
         .image-area { 
