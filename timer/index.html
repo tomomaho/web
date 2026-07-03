@@ -415,10 +415,10 @@
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
             
-            osc.type = "sine";        
+            osc.type = "square";        
             osc.frequency.value = 880; // 高めのピッという音
             
-            gain.gain.setValueAtTime(0.1, ctx.currentTime + delay);
+            gain.gain.setValueAtTime(1.0, ctx.currentTime + delay);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
             
             osc.connect(gain);
