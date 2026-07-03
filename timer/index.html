@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png"> <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Timer Service Worker Registered'));
+        }
+    </script>
+    <title>タイマー</title>
+    <style>
+        body { 
+            font-family: sans-serif; 
+            text-align: center; 
+            background: #ffffff; /* 画面いっぱいの白い背景 */
+            margin: 0;           
+            padding: 0; 
+        }
+        .container { 
+            width: 100vw;        /* 画面の横幅いっぱい */
+            min-height: 100vh;   /* 画面の縦幅いっぱい */
+            margin: 0 auto; 
+            background: white; 
+            padding: 30px 20px;  
+            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h2 { margin-top: 0; color: #333; }
+
+        /* 設定エリアのスタイル（ルーレット風の点線枠） */
+        .settings-area { 
+            width: 100%;
+            max-width: 527px;
+            padding: 20px; 
+            background: #fff; 
+            border-radius: 10px; 
+            border: 2px dashed #ccc; 
+            text-align: left; 
+            box-sizing: border-box;
+            margin-bottom: 30px;
+        }
+        .settings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .settings-row:last-of-type {
+            margin-bottom: 0;
+        }
+        .settings-row label {
+            color: #444;
+            font-size: 15px;
+            font-weight: bold;
+        }
+        .settings-row select {
+            font-size: 15px;
+            padding: 6px 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 110px;
+        }
+        
+        /* ランダムボタン（ルーレット風のサブボタン） */
+        .btn-random { 
+            display: block;
+            width: 100%;
+            font-size: 15px; 
+            padding: 12px; 
+            background: #6c757d; 
+            color: white; 
+            border: none;
+            border-radius: 5px; 
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            margin-top: 15px;
+        }
+        .btn-random:hover { background: #5a6268; }
+
+        /* タイマー表示エリア（ルーレットの画像エリア風） */
+        .timer-area { 
+            width: 100%;         
+            max-width: 527px;    
+            aspect-ratio: 527 / 259; /* ルーレットと同じ比率 */
+            margin: 0 auto 20px auto; 
+            border: 4px solid #333; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            justify-content: center; 
+            background: #fafafa; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            position: relative; 
+            box-sizing: border-box;
+        }
+        
+        /* 現在の工程名（ルーレットの結果タイトル風） */
+        .status-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff3366; /* ルーレットのタイトル色 */
+            margin-bottom: 10px;
+        }
+        
+        /* 残り時間カウント */
+        .time-display {
+            font-size: 64px;
+            font-weight: bold;
+            color: #333;
+            font-variant-numeric: tabular-nums; /* 数字の幅を固定してガタつきを防ぐ */
+        }
+
+        /* 進行度（1/5工程 など） */
+        .progress-display {
+            font-size: 16px;
+            color: #666;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        /* コントロールボタン群 */
+        .control-panel {
+            width: 100%;
+            max-width: 527px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* スタート・ストップボタン（メインボタン） */
+        .action-btn { 
+            font-size: 22px; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            width: 220px; 
+            transition: 0.2s; 
+        }
+        .start-btn { background: #28a745; color: white; }
+        .start-btn:hover { background: #218838; }
+        .stop-btn { background: #dc3545; color: white; }
+        .stop-btn:hover { background: #c82333; }
+
+        /* スキップ・リセットボタン用（サブボタン群） */
+        .sub-btn-group {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-sub {
+            font-size: 15px;
+            padding: 10px 20px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            color: #333;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 130px;
+            transition: 0.2s;
+        }
+        .btn-sub:hover { background: #e2e6ea; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>トレーニングタイマー</h2>
+    
+    <div class="settings-area">
+        <div class="settings-row">
+            <label for="t1Select"> 1 トレーニング</label>
+            <select id="t1Select" onchange="resetTimer()"></select>
+        </div>
+        <div class="settings-row">
+            <label for="r1Select"> 2 休憩</label>
+            <select id="r1Select" onchange="resetTimer()"></select>
+        </div>
+        <div class="settings-row">
+            <label for="t2Select"> 3 トレーニング</label>
+            <select id="t2Select" onchange="resetTimer()"></select>
+        </div>
+        <div class="settings-row">
+            <label for="r2Select"> 4 休憩</label>
+            <select id="r2Select" onchange="resetTimer()"></select>
+        </div>
+        <div class="settings-row">
+            <label for="t3Select"> 5 トレーニング</label>
+            <select id="t3Select" onchange="resetTimer()"></select>
+        </div>
+
+        <button class="btn-random" onclick="setRandomTimes()">🎲 すべてランダムで設定</button>
+    </div>
+
+    <div class="timer-area">
+        <div class="status-title" id="statusTitle">READY</div>
+        <div class="time-display" id="timeDisplay">00:00</div>
+        <div class="progress-display" id="progressDisplay">工程 0 / 5</div>
+    </div>
+    
+    <div class="control-panel">
+        <button id="actionBtn" class="action-btn start-btn" onclick="toggleTimer()">スタート！</button>
+        
+        <div class="sub-btn-group">
+            <button class="btn-sub" onclick="prevStep()">↩ 頭に戻る</button>
+            <button class="btn-sub" onclick="nextStep()">次へ進む ↪</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // プルダウンメニューの生成
+    const t1Select = document.getElementById('t1Select');
+    const t2Select = document.getElementById('t2Select');
+    const t3Select = document.getElementById('t3Select');
+    const r1Select = document.getElementById('r1Select');
+    const r2Select = document.getElementById('r2Select');
+
+    const workoutSelects = [t1Select, t2Select, t3Select];
+    const restSelects = [r1Select, r2Select];
+
+    // トレーニング時間（30s〜180s, 30s単位）を各プルダウンに生成
+    workoutSelects.forEach(select => {
+        for (let i = 30; i <= 180; i += 30) {
+            select.innerHTML += `<option value="${i}">${i} 秒</option>`;
+        }
+    });
+
+    // 休憩時間（10s〜30s, 10s単位）を各プルダウンに生成
+    restSelects.forEach(select => {
+        for (let i = 10; i <= 30; i += 10) {
+            select.innerHTML += `<option value="${i}">${i} 秒</option>`;
+        }
+    });
+
+    // タイマー管理用変数
+    let timerId = null;
+    let isRunning = false;
+    
+    // 5つの全工程を管理する配列
+    let steps = [];
+    let currentStepIndex = 0;
+    let timeLeft = 0;
+
+    const statusTitle = document.getElementById('statusTitle');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const progressDisplay = document.getElementById('progressDisplay');
+    const actionBtn = document.getElementById('actionBtn');
+
+    // 初期化表示
+    resetTimer();
+
+    // タイマーステップの組み立てと初期化
+    function resetTimer() {
+        clearInterval(timerId);
+        isRunning = false;
+        actionBtn.innerText = "スタート！";
+        actionBtn.className = "action-btn start-btn";
+
+        // 5つの独立する工程をそれぞれのセレクトボックスの値から個別に定義
+        steps = [
+            { name: "1 トレーニング", time: parseInt(t1Select.value) },
+            { name: "2 休憩", time: parseInt(r1Select.value) },
+            { name: "3 トレーニング", time: parseInt(t2Select.value) },
+            { name: "4 休憩", time: parseInt(r2Select.value) },
+            { name: "5 トレーニング", time: parseInt(t3Select.value) }
+        ];
+
+        currentStepIndex = 0;
+        timeLeft = steps[currentStepIndex].time;
+        updateDisplay();
+    }
+
+    // すべてランダム設定ボタン（5項目をバラバラにランダム設定）
+    function setRandomTimes() {
+        const workoutOptions = [30, 60, 90, 120, 150, 180];
+        const restOptions = [10, 20, 30];
+
+        workoutSelects.forEach(select => {
+            const randomVal = workoutOptions[Math.floor(Math.random() * workoutOptions.length)];
+            select.value = randomVal;
+        });
+
+        restSelects.forEach(select => {
+            const randomVal = restOptions[Math.floor(Math.random() * restOptions.length)];
+            select.value = randomVal;
+        });
+
+        resetTimer();
+    }
+
+    // 画面表示の更新
+    function updateDisplay() {
+        if (currentStepIndex >= steps.length) {
+            statusTitle.innerText = "FINISH!!";
+            timeDisplay.innerText = "00:00";
+            progressDisplay.innerText = "全工程 終了";
+            return;
+        }
+
+        const currentStep = steps[currentStepIndex];
+        statusTitle.innerText = `【 ${currentStep.name} 】`;
+        
+        // 分：秒のフォーマット化
+        const minutes = String(Math.floor(timeLeft / 60)).padStart(2, '0');
+        const seconds = String(timeLeft % 60).padStart(2, '0');
+        timeDisplay.innerText = `${minutes}:${seconds}`;
+
+        progressDisplay.innerText = `工程 ${currentStepIndex + 1} / 5`;
+    }
+
+    // スタート・ストップの切り替え
+    function toggleTimer() {
+        if (currentStepIndex >= steps.length) {
+            resetTimer(); // 終了後に押されたら最初から
+        }
+
+        if (!isRunning) {
+            // スタート
+            isRunning = true;
+            actionBtn.innerText = "ストップ！";
+            actionBtn.className = "action-btn stop-btn";
+            
+            timerId = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateDisplay();
+                } else {
+                    // カウントが0になったら次の工程へ
+                    handleStepComplete();
+                }
+            }, 1000);
+        } else {
+            // ストップ（一時停止）
+            clearInterval(timerId);
+            isRunning = false;
+            actionBtn.innerText = "スタート！";
+            actionBtn.className = "action-btn start-btn";
+        }
+    }
+
+    // ひとつの工程が終了したときの処理
+    function handleStepComplete() {
+        if (currentStepIndex === 4) {
+            // 5つ目のタイマーが終了
+            playTone(true); // ピピピッ（トリプル音）
+            clearInterval(timerId);
+            isRunning = false;
+            currentStepIndex++;
+            updateDisplay();
+            actionBtn.innerText = "もう一度！";
+            actionBtn.className = "action-btn start-btn";
+        } else {
+            // 1〜4つ目のタイマーが終了
+            playTone(false); // ピッ（シングル音）
+            currentStepIndex++;
+            timeLeft = steps[currentStepIndex].time;
+            updateDisplay();
+        }
+    }
+
+    // 前の工程の頭に戻るボタン
+    function prevStep() {
+        const wasRunning = isRunning;
+        if (wasRunning) toggleTimer(); // 動いていたら一旦止める
+
+        // 1秒でも進んでいたら現在の工程の頭に戻る、既に頭なら1つ前の工程の頭に戻る
+        if (timeLeft < steps[currentStepIndex].time) {
+            timeLeft = steps[currentStepIndex].time;
+        } else if (currentStepIndex > 0) {
+            currentStepIndex--;
+            timeLeft = steps[currentStepIndex].time;
+        }
+        
+        updateDisplay();
+        if (wasRunning) toggleTimer(); // 止めていたら再開
+    }
+
+    // 次の工程に進む（スキップ）ボタン
+    function nextStep() {
+        if (currentStepIndex >= steps.length) return;
+        
+        const wasRunning = isRunning;
+        if (wasRunning) toggleTimer();
+
+        if (currentStepIndex === 4) {
+            // 5つ目なら終了処理
+            handleStepComplete();
+        } else {
+            // 途中の工程なら音は鳴らさずに次に進む
+            currentStepIndex++;
+            timeLeft = steps[currentStepIndex].time;
+            updateDisplay();
+            if (wasRunning) toggleTimer();
+        }
+    }
+
+    // 🎵 電子音を鳴らす関数（Web Audio API）
+    function playTone(isTriple) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+
+        function beep(delay) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = "sine";        
+            osc.frequency.value = 880; // 高めのピッという音
+            
+            gain.gain.setValueAtTime(0.1, ctx.currentTime + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            osc.start(ctx.currentTime + delay);
+            osc.stop(ctx.currentTime + delay + 0.15);
+        }
+
+        if (isTriple) {
+            beep(0);
+            beep(0.2);
+            beep(0.4);
+        } else {
+            beep(0);
+        }
+    }
+</script>
+
+</body>
+</html>
