@@ -416,7 +416,7 @@
             const gain = ctx.createGain();
             
             osc.type = "square";        
-            osc.frequency.value = 880; // 高めのピッという音
+            osc.frequency.value = 1500; // 高めのピッという音
             
             gain.gain.setValueAtTime(1.0, ctx.currentTime + delay);
             gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.15);
