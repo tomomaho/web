@@ -184,9 +184,9 @@ button.ctrl-btn.active {
   overflow-x: auto;
 }
 
-.chord-sheet.size-sm { font-size: 15px; }
-.chord-sheet.size-md { font-size: 19px; }
-.chord-sheet.size-lg { font-size: 24px; }
+.chord-sheet.size-sm { font-size: 19px; }
+.chord-sheet.size-md { font-size: 24px; }
+.chord-sheet.size-lg { font-size: 30px; }
 
 .section-label {
   display: inline-block;
